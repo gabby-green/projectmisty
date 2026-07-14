@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indoor Dog Activity Centre — Break-Even Calculator</title>
+<style>
+  :root{
+    --ink:#3a322d; --cream:#f4f1ea; --card:#e7e3da; --muted:#8a8177;
+    --red:#c0392b; --amber:#d68910; --green:#1e8449;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Segoe UI", Arial, sans-serif; background:var(--cream); color:var(--ink); padding:32px 16px;}
+  .wrap{max-width:960px; margin:0 auto;}
+  h1{font-size:26px; margin-bottom:4px;}
+  .sub{color:var(--muted); font-size:14px; margin-bottom:24px;}
+  .grid{display:grid; grid-template-columns:1fr 1.15fr; gap:24px;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .panel{background:#fff; border:1px solid var(--card); border-radius:14px; padding:22px; box-shadow:0 2px 6px rgba(0,0,0,.05);}
+  .ctl{margin-bottom:20px;}
+  .ctl label{display:flex; justify-content:space-between; font-size:13.5px; font-weight:600; margin-bottom:7px;}
+  .ctl label span.val{font-variant-numeric:tabular-nums;}
+  .ctl small{display:block; color:var(--muted); font-size:11.5px; margin-top:4px;}
+  input[type=range]{width:100%; accent-color:var(--ink); cursor:pointer;}
+  .sect{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 12px;}
+  hr{border:none; border-top:1px solid var(--card); margin:4px 0 18px;}
+  .fixed{background:var(--cream); border-radius:10px; padding:12px 14px; font-size:12px; color:var(--muted); line-height:1.7;}
+  .big{font-size:42px; font-weight:800; font-variant-numeric:tabular-nums; transition:color .25s;}
+  .status{font-size:15px; font-weight:700; margin-top:2px; transition:color .25s;}
+  .bar{height:14px; background:var(--card); border-radius:7px; overflow:hidden; margin:16px 0 6px;}
+  .bar div{height:100%; width:0%; border-radius:7px; transition:width .25s, background .25s;}
+  .bar-label{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted);}
+  table{width:100%; border-collapse:collapse; margin-top:16px; font-size:13.5px;}
+  td{padding:6px 0; border-bottom:1px solid var(--card);}
+  td:last-child{text-align:right; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  td small{color:var(--muted);}
+  .kpis{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:16px;}
+  .kpi{background:var(--cream); border-radius:10px; padding:10px 12px;}
+  .kpi b{display:block; font-size:17px; font-variant-numeric:tabular-nums;}
+  .kpi span{font-size:10.5px; color:var(--muted);}
+  .note{font-size:11px; color:var(--muted); margin-top:14px; line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Let Dogs be Dogs — Break-Even Explorer</h1>
+  <p class="sub">Adjust members and visits. All prices are fixed at the proposed pricing model; costs at the base case.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <p class="sect">Members</p>
+      <div class="ctl">
+        <label>Off-peak members (HK$298/mo) <span class="val" id="vOpM"></span></label>
+        <input type="range" id="opM" min="0" max="1000" step="5" value="175">
+      </div>
+      <div class="ctl">
+        <label>Full members (HK$448/mo) <span class="val" id="vFM"></span></label>
+        <input type="range" id="fM" min="0" max="1000" step="5" value="275">
+      </div>
+
+      <hr><p class="sect">Visits</p>
+      <div class="ctl">
+        <label>Visits / member / month <span class="val" id="vFreq"></span></label>
+        <input type="range" id="freq" min="1" max="14" step="1" value="6">
+      </div>
+      <div class="ctl">
+        <label>Off-peak members visiting at peak <span class="val" id="vOpPeak"></span></label>
+        <input type="range" id="opPeak" min="0" max="50" step="5" value="15">
+        <small>Share of their visits at peak — each pays the HK$48 member peak rate</small>
+      </div>
+      <div class="ctl">
+        <label>Non-member visits / month <span class="val" id="vDrop"></span></label>
+        <input type="range" id="drop" min="0" max="1500" step="15" value="435">
+      </div>
+      <div class="ctl">
+        <label>Non-member visits at peak <span class="val" id="vNmPeak"></span></label>
+        <input type="range" id="nmPeak" min="0" max="100" step="5" value="45">
+        <small>Peak drop-ins pay HK$148; off-peak HK$98</small>
+      </div>
+
+      <div class="fixed">
+        <b>Fixed (per pricing slide &amp; cost base case)</b><br>
+        Drop-in: HK$98 off-peak · HK$148 peak<br>
+        Off-peak member: HK$298/mo + HK$48 per peak visit<br>
+        Full member: HK$448/mo, all hours included<br>
+        Estimated operating costs: HK$321,000 / month
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="big" id="revenue">HK$0</div>
+      <div class="status" id="status"></div>
+      <div class="bar"><div id="barFill"></div></div>
+      <div class="bar-label"><span>HK$0</span><span id="barBE"></span><span id="barMax"></span></div>
+
+      <table>
+        <tr><td>Off-peak membership fees <small id="dOpFees"></small></td><td id="tOpFees"></td></tr>
+        <tr><td>Full membership fees <small id="dFmFees"></small></td><td id="tFmFees"></td></tr>
+        <tr><td>Member peak-visit charges <small id="dTopup"></small></td><td id="tTopup"></td></tr>
+        <tr><td>Drop-in, off-peak <small id="dNmOp"></small></td><td id="tNmOp"></td></tr>
+        <tr><td>Drop-in, peak <small id="dNmPk"></small></td><td id="tNmPk"></td></tr>
+        <tr><td>Estimated operating costs</td><td>(HK$321,000)</td></tr>
+        <tr><td><b>Monthly surplus / (deficit)</b></td><td id="tNet"></td></tr>
+      </table>
+
+      <div class="kpis">
+        <div class="kpi"><b id="kVisits"></b><span>total visits / month</span></div>
+        <div class="kpi"><b id="kDay"></b><span>avg visits / day</span></div>
+        <div class="kpi"><b id="kFloor"></b><span>avg dogs on floor (2-hr visits, 13-hr day)</span></div>
+      </div>
+      <div class="note">Not modelled: second-dog +50% fee, class/equipment/partner revenue, member 15% discounts (no base-price revenue assumed from them). Full members' visits are covered by their fee, so extra full-member visits add traffic, not revenue.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => 'HK$' + Math.round(n).toLocaleString();
+const COST = 321000, OP_FEE = 298, FULL_FEE = 448, PEAK_TOPUP = 48, NM_OP = 98, NM_PK = 148;
+
+function lerpColor(t){
+  const stops = [[192,57,43],[214,137,16],[30,132,69]];
+  const seg = t < .5 ? 0 : 1, u = (t - seg*.5)/.5;
+  const a = stops[seg], b = stops[seg+1];
+  return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*u)).join(',')})`;
+}
+
+function update(){
+  const opM = +$('opM').value, fM = +$('fM').value, freq = +$('freq').value;
+  const opPeakShare = +$('opPeak').value/100;
+  const dv = +$('drop').value, nmPeakShare = +$('nmPeak').value/100;
+
+  $('vOpM').textContent = opM.toLocaleString();
+  $('vFM').textContent = fM.toLocaleString();
+  $('vFreq').textContent = freq + '×';
+  $('vOpPeak').textContent = Math.round(opPeakShare*100) + '%';
+  $('vDrop').textContent = dv.toLocaleString();
+  $('vNmPeak').textContent = Math.round(nmPeakShare*100) + '%';
+
+  const opFees = opM * OP_FEE;
+  const fmFees = fM * FULL_FEE;
+  const topupVisits = opM * freq * opPeakShare;
+  const topup = topupVisits * PEAK_TOPUP;
+  const nmPkVisits = dv * nmPeakShare, nmOpVisits = dv - nmPkVisits;
+  const nmOpRev = nmOpVisits * NM_OP, nmPkRev = nmPkVisits * NM_PK;
+
+  const rev = opFees + fmFees + topup + nmOpRev + nmPkRev;
+  const net = rev - COST;
+  const ratio = Math.max(0, Math.min(rev/COST, 1));
+  const col = lerpColor(ratio >= 1 ? 1 : ratio*0.85);
+
+  $('revenue').textContent = fmt(rev);
+  $('revenue').style.color = col;
+  $('status').style.color = col;
+  $('status').textContent = net >= 0
+    ? '✓ Break-even achieved — surplus ' + fmt(net) + '/month'
+    : 'Below break-even — short ' + fmt(-net) + '/month';
+
+  const maxScale = Math.max(COST*1.4, rev*1.1);
+  $('barFill').style.width = (rev/maxScale*100) + '%';
+  $('barFill').style.background = col;
+  $('barBE').textContent = '▲ break-even ' + fmt(COST);
+  $('barMax').textContent = fmt(maxScale);
+
+  $('tOpFees').textContent = fmt(opFees);
+  $('dOpFees').textContent = opM + ' × HK$298';
+  $('tFmFees').textContent = fmt(fmFees);
+  $('dFmFees').textContent = fM + ' × HK$448';
+  $('tTopup').textContent = fmt(topup);
+  $('dTopup').textContent = Math.round(topupVisits).toLocaleString() + ' visits × HK$48';
+  $('tNmOp').textContent = fmt(nmOpRev);
+  $('dNmOp').textContent = Math.round(nmOpVisits).toLocaleString() + ' × HK$98';
+  $('tNmPk').textContent = fmt(nmPkRev);
+  $('dNmPk').textContent = Math.round(nmPkVisits).toLocaleString() + ' × HK$148';
+  $('tNet').textContent = (net<0?'(':'') + fmt(Math.abs(net)) + (net<0?')':'');
+  $('tNet').style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
+
+  const visits = (opM + fM)*freq + dv, perDay = visits/30;
+  $('kVisits').textContent = Math.round(visits).toLocaleString();
+  $('kDay').textContent = Math.round(perDay);
+  $('kFloor').textContent = Math.round(perDay*2/13);
+}
+
+['opM','fM','freq','opPeak','drop','nmPeak'].forEach(id => $(id).addEventListener('input', update));
+update();
+</script>
+</body>
+</html>
